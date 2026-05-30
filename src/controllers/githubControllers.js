@@ -14,7 +14,7 @@ exports.analyzeProfile = async (req,res) => {
                 if(err) {
                     return res.status(500).json({
                         success:false,
-                        message: "Database query error"
+                        message: err.message
                     });
                 }
 
@@ -41,7 +41,8 @@ exports.analyzeProfile = async (req,res) => {
                     }
                     return res.status(500).json({
                         success : false,
-                        message : "GitHub API error"
+                        message : "GitHub API error",
+                        error : apiError.message
                     })
                 }
 
@@ -73,7 +74,8 @@ exports.analyzeProfile = async (req,res) => {
                         if(insertErr) {
                             return res.status(500).json({
                                 success:false,
-                                message: "Database insertion error"
+                                message: "Database insertion error",
+                                error: insertErr.message
                             });
                         }
 
@@ -126,7 +128,7 @@ exports.getAllProfiles = (req,res) => {
             if(err) {
                 return res.status(500).json({
                     success : false,
-                    message : "Database query error"
+                    message : err.message
                 });
             }
             res.status(200).json({
@@ -147,7 +149,7 @@ exports.getProfileByUsername = (req,res) => {
             if(err) {
                 return res.status(500).json({
                     success : false,
-                    message : "database query error"
+                    message : err.message
                 });
             }
             if(results.length > 0) {
