@@ -1,17 +1,25 @@
 # GitHub Profile Analyzer API
 
-A backend service built with **Node.js, Express.js, MySQL, and GitHub Public API** that analyzes GitHub user profiles, stores useful insights in a MySQL database, and provides APIs to retrieve analyzed profile data.
+A production-ready backend service built with **Node.js, Express.js, MySQL, and GitHub Public API** that analyzes GitHub user profiles, stores useful insights in a MySQL database, and provides REST APIs to retrieve analyzed profile data.
+
+## Live Demo
+
+**API Base URL**
+
+https://github-profile-analyzer-production-89e6.up.railway.app/
+
+---
 
 ## Features
 
 * Fetch GitHub user profile data using GitHub Public API
-* Analyze and store profile insights
-* Store data in MySQL database
-* Prevent duplicate API calls using database caching
+* Analyze and store profile insights in MySQL
+* Cache previously analyzed profiles to reduce unnecessary GitHub API calls
 * Retrieve all analyzed profiles
-* Retrieve a specific analyzed profile by username
+* Retrieve a specific profile by username
 * Environment variable support using dotenv
 * Error handling for invalid GitHub usernames
+* Deployed on Railway with MySQL integration
 
 ---
 
@@ -23,6 +31,7 @@ A backend service built with **Node.js, Express.js, MySQL, and GitHub Public API
 * GitHub Public API
 * Axios
 * Dotenv
+* Railway
 
 ---
 
@@ -36,7 +45,7 @@ src/
 │   └── githubController.js
 ├── routes/
 │   └── githubRoutes.js
-├── app.js
+└── app.js
 ```
 
 ---
@@ -48,7 +57,7 @@ Table: `github_profiles`
 | Column             | Type                     |
 | ------------------ | ------------------------ |
 | id                 | INT (PK, AUTO_INCREMENT) |
-| username           | VARCHAR(255)             |
+| username           | VARCHAR(255) UNIQUE      |
 | name               | VARCHAR(255)             |
 | bio                | TEXT                     |
 | followers          | INT                      |
@@ -70,7 +79,7 @@ Table: `github_profiles`
 Profile Score = (Followers × 2) + (Public Repositories × 5)
 ```
 
-This score provides a simple measure of profile popularity and repository activity.
+This score provides a simple metric representing a user's GitHub popularity and repository activity.
 
 ---
 
@@ -90,7 +99,7 @@ POST /api/github/analyze/torvalds
 
 ---
 
-### Get All Analyzed Profiles
+### Get All Profiles
 
 ```http
 GET /api/github/profiles
@@ -112,54 +121,7 @@ GET /api/github/profile/torvalds
 
 ---
 
-## Environment Variables
-
-Create a `.env` file in the root directory.
-
-```env
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=
-DB_NAME=github_analyzer
-PORT=5000
-```
-
----
-
-## Installation
-
-### Clone Repository
-
-```bash
-git clone <repository-url>
-cd github-profile-analyzer
-```
-
-### Install Dependencies
-
-```bash
-npm install
-```
-
-### Configure Environment Variables
-
-Create a `.env` file and add the required values.
-
-### Start Server
-
-```bash
-npm run dev
-```
-
-or
-
-```bash
-npm start
-```
-
----
-
-## API Response Example
+## Example Response
 
 ```json
 {
@@ -176,21 +138,66 @@ npm start
 
 ---
 
-## Live Deployment
+## Environment Variables
 
-Backend URL:
+Create a `.env` file in the root directory.
 
-```text
-Add your deployed API URL here
+```env
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=
+DB_NAME=github_analyzer
+PORT=5000
 ```
+
+---
+
+## Installation
+
+### Clone Repository
+
+```bash
+git clone https://github.com/nithin-code-web/github-profile-analyzer
+cd github-profile-analyzer
+```
+
+### Install Dependencies
+
+```bash
+npm install
+```
+
+### Configure Environment Variables
+
+Create a `.env` file and add the required values.
+
+### Run Development Server
+
+```bash
+npm run dev
+```
+
+### Run Production Server
+
+```bash
+npm start
+```
+
+---
+
+## Deployment
+
+The application is deployed on Railway and uses a MySQL database hosted on Railway.
+
+Live URL:
+
+https://github-profile-analyzer-production-89e6.up.railway.app/
 
 ---
 
 ## Author
 
-Nithin Budime
+**Nithin Budime**
 
 Backend Developer | Full Stack Development Learner
-
-```
-```
