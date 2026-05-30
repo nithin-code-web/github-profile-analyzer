@@ -62,13 +62,17 @@ exports.analyzeProfile = async (req,res) => {
                     created_at
                 } = githubData;
 
+                const formattedCreatedAt = created_at
+                    .replace("T", " ")
+                    .replace("Z", " ");
+
                 const profileScore = (followers * 2) + (public_repos * 5);
 
                 const insertQuery = "INSERT INTO github_profiles (username, name, bio, followers, following, public_repos, avatar_url, github_url,company, location, account_created_at, profile_score) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
                 connection.query(
                     insertQuery,
-                    [login, name, bio, followers, following, public_repos, avatar_url, html_url, company, location, created_at, profileScore],
+                    [login, name, bio, followers, following, public_repos, avatar_url, html_url, company, location, formattedCreatedAt, profileScore],
                     (insertErr, insertResults) => {
 
                         if(insertErr) {
@@ -94,7 +98,7 @@ exports.analyzeProfile = async (req,res) => {
                                     github_url: html_url,
                                     company: company,
                                     location: location,
-                                    account_created_at: created_at,
+                                    account_created_at: formattedCreatedAt,
                                     profile_score: profileScore
                                 }
                             });
