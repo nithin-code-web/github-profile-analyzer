@@ -3,13 +3,14 @@ const mysql = require('mysql2');
 const connection = mysql.createConnection({
     host:process.env.DB_HOST ,
     user:process.env.DB_USER ,
+    port:process.env.DB_PORT ,
     password:process.env.DB_PASSWORD ,
     database:process.env.DB_NAME 
 });
 
 connection.connect((err) => {
     if(err) {
-        console.log("Database connection failed: ",err.message);
+        console.log("Database connection failed: ",err);
         return;
     }
     console.log("MySQL connected...")
