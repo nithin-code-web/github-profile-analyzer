@@ -1,10 +1,54 @@
 const axios = require("axios");
-const connection = require("../config/db");
-
+const prisma = require("../../prisma/prismaClient")
 
 exports.analyzeProfile = async (req,res) => {
     try{
         const username = req.params.username;
+
+        const existingUser = await prisma.githubProfile.findUnique({
+            where:{
+                username
+            }
+        })
+        if (existingUser) {
+            return res.status(200).json({
+                source:"database",
+                data:existingUser
+            })
+        } else {
+            try{
+                const githubData = await axios.get(`https://api.github.com/users/${username}`)
+                const userData = githubData.data
+                
+                const {
+                        login,
+                        name,
+                        bio,
+                        followers,
+                        following,
+                        public_repos,
+                        avatar_url,
+                        html_url,
+                        company,
+                        location,
+                        created_at
+                    } = userData
+                    
+            } catch(error) {
+                if (error.response.status === 404) {
+                    return res.status(404).json({
+                        message:"user not found on GitHub"
+                    }) 
+                } else {
+                    return res.status(500).json({
+                        message:"server error",
+                        error:error.message
+                    })
+                }
+            }
+
+        }
+
 
         connection.query(
             "SELECT * FROM github_profiles WHERE username = ?",
