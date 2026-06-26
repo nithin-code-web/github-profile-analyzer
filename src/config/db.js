@@ -1,21 +1,12 @@
-const mysql = require("mysql2");
+const prisma = require("../../prisma/prismaClient");
 
-const connection = mysql.createConnection({
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME
-});
+prisma.$connect()
+    .then(() => {
+        console.log("PostgreSQL connected with Prisma");
+    })
+    .catch((error) => {
+        console.error("PostgreSQL connection failed:");
+        console.error(error);
+    });
 
-connection.connect((err) => {
-    if(err) {
-        console.error("Database connection failed:");
-        console.error(err);
-        return;
-    }
-
-    console.log("MySQL connected...");
-});
-
-module.exports = connection;
+module.exports = prisma;
