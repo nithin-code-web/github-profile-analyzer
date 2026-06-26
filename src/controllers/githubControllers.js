@@ -1,217 +1,179 @@
 const axios = require("axios");
-const prisma = require("../../prisma/prismaClient")
+const prisma = require("../config/db");
 
-exports.analyzeProfile = async (req,res) => {
-    try{
-        const username = req.params.username;
+const mapProfileResponse = (profile) => ({
+    id: profile.id,
+    username: profile.username,
+    name: profile.name,
+    bio: profile.bio,
+    followers: profile.followers,
+    following: profile.following,
+    public_repos: profile.publicRepos,
+    avatar_url: profile.avatarUrl,
+    github_url: profile.githubUrl,
+    company: profile.company,
+    location: profile.location,
+    account_created_at: profile.accountCreatedAt,
+    profile_score: profile.profileScore,
+    analyzed_at: profile.analyzedAt
+});
 
-        const existingUser = await prisma.githubProfile.findUnique({
-            where:{
-                username
+const findProfileByUsername = (username) => {
+    return prisma.githubProfile.findFirst({
+        where: {
+            username: {
+                equals: username,
+                mode: "insensitive"
             }
-        })
-        if (existingUser) {
+        }
+    });
+};
+
+exports.analyzeProfile = async (req, res) => {
+    const username = req.params.username?.trim();
+
+    if (!username) {
+        return res.status(400).json({
+            success: false,
+            message: "GitHub username is required"
+        });
+    }
+
+    try {
+        const existingProfile = await findProfileByUsername(username);
+
+        if (existingProfile) {
             return res.status(200).json({
-                source:"database",
-                data:existingUser
-            })
-        } else {
-            try{
-                const githubData = await axios.get(`https://api.github.com/users/${username}`)
-                const userData = githubData.data
-                
-                const {
-                        login,
-                        name,
-                        bio,
-                        followers,
-                        following,
-                        public_repos,
-                        avatar_url,
-                        html_url,
-                        company,
-                        location,
-                        created_at
-                    } = userData
-                    
-            } catch(error) {
-                if (error.response.status === 404) {
-                    return res.status(404).json({
-                        message:"user not found on GitHub"
-                    }) 
-                } else {
-                    return res.status(500).json({
-                        message:"server error",
-                        error:error.message
-                    })
-                }
-            }
-
+                success: true,
+                source: "database",
+                data: mapProfileResponse(existingProfile)
+            });
         }
 
+        const response = await axios.get(`https://api.github.com/users/${username}`);
+        const {
+            login,
+            name,
+            bio,
+            followers,
+            following,
+            public_repos,
+            avatar_url,
+            html_url,
+            company,
+            location,
+            created_at
+        } = response.data;
 
-        connection.query(
-            "SELECT * FROM github_profiles WHERE username = ?",
-            [username],
-            async (err, results) => {
+        const profileScore = (followers * 2) + (public_repos * 5);
 
-                if(err) {
-                    return res.status(500).json({
-                        success:false,
-                        message: err.message
-                    });
-                }
-
-                if(results.length > 0) {
-                    return res.status(200).json({
-                        success : true,
-                        source : "database",
-                        data : results[0]
-                    });
-                }
-
-
-                let response;
-
-                try{
-                    response = await axios.get(`https://api.github.com/users/${username}`);
-
-                }catch(apiError) {
-                    if(apiError.response && apiError.response.status === 404) {
-                        return res.status(404).json({
-                            success : false,
-                            message : "GitHub user not found"
-                        })
-                    }
-                    return res.status(500).json({
-                        success : false,
-                        message : "GitHub API error",
-                        error : apiError.message
-                    })
-                }
-
-                const githubData = response.data;
-
-                const {
-                    login,
-                    name,
-                    bio,
-                    followers,
-                    following,
-                    public_repos,
-                    avatar_url,
-                    html_url,
-                    company,
-                    location,
-                    created_at
-                } = githubData;
-
-                const formattedCreatedAt = created_at
-                    .replace("T", " ")
-                    .replace("Z", " ");
-
-                const profileScore = (followers * 2) + (public_repos * 5);
-
-                const insertQuery = "INSERT INTO github_profiles (username, name, bio, followers, following, public_repos, avatar_url, github_url,company, location, account_created_at, profile_score) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-                connection.query(
-                    insertQuery,
-                    [login, name, bio, followers, following, public_repos, avatar_url, html_url, company, location, formattedCreatedAt, profileScore],
-                    (insertErr, insertResults) => {
-
-                        if(insertErr) {
-                            return res.status(500).json({
-                                success:false,
-                                message: "Database insertion error",
-                                error: insertErr.message
-                            });
-                        }
-
-                        if(insertResults.affectedRows > 0) {
-                            return res.status(201).json({
-                                success : true,
-                                source : "GitHub API",
-                                data : {
-                                    username: login,
-                                    name: name,
-                                    bio: bio,
-                                    followers: followers,
-                                    following: following,
-                                    public_repos: public_repos,
-                                    avatar_url: avatar_url,
-                                    github_url: html_url,
-                                    company: company,
-                                    location: location,
-                                    account_created_at: formattedCreatedAt,
-                                    profile_score: profileScore
-                                }
-                            });
-                        } else {
-                            return res.status(500).json({
-                                success : false,
-                                message : "Failed to save profile data"
-                            })
-                        }
-
-                    }
-                )
+        const createdProfile = await prisma.githubProfile.create({
+            data: {
+                username: login,
+                name,
+                bio,
+                followers,
+                following,
+                publicRepos: public_repos,
+                avatarUrl: avatar_url,
+                githubUrl: html_url,
+                company,
+                location,
+                accountCreatedAt: new Date(created_at),
+                profileScore
             }
-        )
+        });
 
-    } catch(error) {
+        return res.status(201).json({
+            success: true,
+            source: "GitHub API",
+            data: mapProfileResponse(createdProfile)
+        });
+    } catch (error) {
+        if (error.response?.status === 404) {
+            return res.status(404).json({
+                success: false,
+                message: "GitHub user not found"
+            });
+        }
 
-        res.status(500).json({
-            success:false,
+        if (error.code === "P2002") {
+            const profile = await findProfileByUsername(username);
+
+            if (!profile) {
+                return res.status(409).json({
+                    success: false,
+                    message: "Profile already exists but could not be loaded"
+                });
+            }
+
+            return res.status(200).json({
+                success: true,
+                source: "database",
+                data: mapProfileResponse(profile)
+            });
+        }
+
+        return res.status(500).json({
+            success: false,
             message: "Error analyzing GitHub profile",
             error: error.message
         });
     }
-    
-} 
+};
 
-exports.getAllProfiles = (req,res) => {
-    connection.query(
-        "SELECT * FROM github_profiles ORDER BY profile_score DESC",
-        (err,results) => {
-            if(err) {
-                return res.status(500).json({
-                    success : false,
-                    message : err.message
-                });
-            }
-            res.status(200).json({
-                success : true,
-                count : results.length,
-                data : results
+exports.getAllProfiles = async (req, res) => {
+    try {
+        const profiles = await prisma.githubProfile.findMany({
+            orderBy: [
+                { profileScore: "desc" },
+                { analyzedAt: "desc" }
+            ]
+        });
+
+        return res.status(200).json({
+            success: true,
+            count: profiles.length,
+            data: profiles.map(mapProfileResponse)
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "Error fetching analyzed profiles",
+            error: error.message
+        });
+    }
+};
+
+exports.getProfileByUsername = async (req, res) => {
+    const username = req.params.username?.trim();
+
+    if (!username) {
+        return res.status(400).json({
+            success: false,
+            message: "GitHub username is required"
+        });
+    }
+
+    try {
+        const profile = await findProfileByUsername(username);
+
+        if (!profile) {
+            return res.status(404).json({
+                success: false,
+                message: "Profile not found in database"
             });
         }
-    )
-}
 
-exports.getProfileByUsername = (req,res) => {
-    const username = req.params.username;
-    connection.query(
-        "SELECT * FROM github_profiles WHERE username = ?",
-        [username],
-        (err,results) => {
-            if(err) {
-                return res.status(500).json({
-                    success : false,
-                    message : err.message
-                });
-            }
-            if(results.length > 0) {
-                return res.status(200).json({
-                    success : true,
-                    data : results[0]
-                })
-            } else {
-                return res.status(404).json({
-                    success : false,
-                    message : "Profile not found in database"
-                })
-            }
-        }
-    )
-}
-
+        return res.status(200).json({
+            success: true,
+            data: mapProfileResponse(profile)
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "Error fetching profile",
+            error: error.message
+        });
+    }
+};
