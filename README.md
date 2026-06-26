@@ -1,87 +1,85 @@
 # GitHub Profile Analyzer API
 
-A production-ready backend service built with **Node.js, Express.js, MySQL, and GitHub Public API** that analyzes GitHub user profiles, stores useful insights in a MySQL database, and provides REST APIs to retrieve analyzed profile data.
+A backend service built with Node.js, Express.js, Prisma, PostgreSQL, and the GitHub Public API. It analyzes GitHub user profiles, stores useful insights in PostgreSQL, caches analyzed profiles, and exposes REST APIs to read the saved profile data.
 
 ## Live Demo
 
-**API Base URL**
+API Base URL:
 
+```text
 https://github-profile-analyzer-production-89e6.up.railway.app/
-
----
+```
 
 ## Features
 
-* Fetch GitHub user profile data using GitHub Public API
-* Analyze and store profile insights in MySQL
+* Fetch GitHub user profile data using the GitHub Public API
+* Analyze and store profile insights in PostgreSQL
 * Cache previously analyzed profiles to reduce unnecessary GitHub API calls
-* Retrieve all analyzed profiles
+* Retrieve all analyzed profiles ordered by profile score
 * Retrieve a specific profile by username
 * Environment variable support using dotenv
+* Prisma ORM setup for Railway PostgreSQL
 * Error handling for invalid GitHub usernames
-* Deployed on Railway with MySQL integration
-
----
 
 ## Tech Stack
 
 * Node.js
 * Express.js
-* MySQL
+* PostgreSQL
+* Prisma
 * GitHub Public API
 * Axios
 * Dotenv
 * Railway
 
----
-
 ## Project Structure
 
 ```text
 src/
-├── config/
-│   └── db.js
-├── controllers/
-│   └── githubController.js
-├── routes/
-│   └── githubRoutes.js
-└── app.js
+|-- config/
+|   `-- db.js
+|-- controllers/
+|   `-- githubControllers.js
+|-- routes/
+|   `-- githubRoutes.js
+`-- app.js
+
+prisma/
+|-- migrations/
+|-- prismaClient.js
+`-- schema.prisma
 ```
 
----
+## Database Model
 
-## Database Schema
+Prisma model: `GithubProfile`
 
-Table: `github_profiles`
+| Field            | Type      | Notes                     |
+| ---------------- | --------- | ------------------------- |
+| id               | Int       | Primary key               |
+| username         | String    | Unique GitHub username    |
+| name             | String?   | GitHub display name       |
+| bio              | String?   | GitHub bio                |
+| followers        | Int       | Follower count            |
+| following        | Int       | Following count           |
+| publicRepos      | Int       | Public repository count   |
+| avatarUrl        | String?   | Avatar image URL          |
+| githubUrl        | String?   | GitHub profile URL        |
+| company          | String?   | Company value from GitHub |
+| location         | String?   | Location value from GitHub |
+| accountCreatedAt | DateTime? | GitHub account creation   |
+| profileScore     | Int       | Calculated profile score  |
+| analyzedAt       | DateTime  | Saved analysis timestamp  |
 
-| Column             | Type                     |
-| ------------------ | ------------------------ |
-| id                 | INT (PK, AUTO_INCREMENT) |
-| username           | VARCHAR(255) UNIQUE      |
-| name               | VARCHAR(255)             |
-| bio                | TEXT                     |
-| followers          | INT                      |
-| following          | INT                      |
-| public_repos       | INT                      |
-| avatar_url         | TEXT                     |
-| github_url         | TEXT                     |
-| company            | VARCHAR(255)             |
-| location           | VARCHAR(255)             |
-| account_created_at | DATETIME                 |
-| profile_score      | INT                      |
-| analyzed_at        | TIMESTAMP                |
-
----
+Database table: `github_profiles`
 
 ## Profile Score Formula
 
 ```text
-Profile Score = (Followers × 2) + (Public Repositories × 5)
+Profile Score = (Followers * 2) + (Public Repositories * 5)
 ```
 
 This score provides a simple metric representing a user's GitHub popularity and repository activity.
-
----
 
 ## API Endpoints
 
@@ -97,15 +95,11 @@ Example:
 POST /api/github/analyze/torvalds
 ```
 
----
-
 ### Get All Profiles
 
 ```http
 GET /api/github/profiles
 ```
-
----
 
 ### Get Profile By Username
 
@@ -119,8 +113,6 @@ Example:
 GET /api/github/profile/torvalds
 ```
 
----
-
 ## Example Response
 
 ```json
@@ -128,76 +120,70 @@ GET /api/github/profile/torvalds
   "success": true,
   "source": "GitHub API",
   "data": {
+    "id": 1,
     "username": "torvalds",
     "followers": 305052,
     "public_repos": 11,
-    "profile_score": 610159
+    "profile_score": 610159,
+    "analyzed_at": "2026-06-26T00:00:00.000Z"
   }
 }
 ```
-
----
 
 ## Environment Variables
 
 Create a `.env` file in the root directory.
 
 ```env
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=
-DB_NAME=github_analyzer
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE?sslmode=require"
 PORT=5000
 ```
 
----
-
 ## Installation
-
-### Clone Repository
 
 ```bash
 git clone https://github.com/nithin-code-web/github-profile-analyzer
 cd github-profile-analyzer
-```
-
-### Install Dependencies
-
-```bash
 npm install
 ```
 
-### Configure Environment Variables
+## Prisma Commands
 
-Create a `.env` file and add the required values.
+```bash
+npx prisma generate
+npx prisma migrate deploy
+```
 
-### Run Development Server
+For local development after changing `schema.prisma`:
+
+```bash
+npx prisma migrate dev
+```
+
+## Run Development Server
 
 ```bash
 npm run dev
 ```
 
-### Run Production Server
+## Run Production Server
 
 ```bash
 npm start
 ```
 
----
-
 ## Deployment
 
-The application is deployed on Railway and uses a MySQL database hosted on Railway.
+The application is deployed on Railway and uses Railway PostgreSQL through Prisma.
 
 Live URL:
 
+```text
 https://github-profile-analyzer-production-89e6.up.railway.app/
-
----
+```
 
 ## Author
 
-**Nithin Budime**
+Nithin Budime
 
 Backend Developer | Full Stack Development Learner
